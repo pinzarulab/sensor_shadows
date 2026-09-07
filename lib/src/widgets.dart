@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'controller.dart';
@@ -56,7 +58,19 @@ class SensorShadowStyle {
   /// the upper left, ensuring surfaces retain depth without sensor hardware.
   BoxDecoration decorationFor(Offset tilt) {
     final offset = Offset(tilt.dx.clamp(-1.0, 1.0), tilt.dy.clamp(-1.0, 1.0));
-    final light = Alignment(-0.6 - offset.dx, -0.8 - offset.dy);
+
+    var lx = -0.6 - offset.dx;
+    var ly = -0.8 - offset.dy;
+    final mag = math.sqrt(lx * lx + ly * ly);
+    if (mag > 0) {
+      lx = (lx / mag) * 1.5;
+      ly = (ly / mag) * 1.5;
+    } else {
+      lx = 0.0;
+      ly = -1.5;
+    }
+
+    final light = Alignment(lx, ly);
     return BoxDecoration(
       borderRadius: borderRadius,
       gradient: LinearGradient(

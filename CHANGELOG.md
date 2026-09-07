@@ -1,3 +1,7 @@
+## 0.1.1
+
+- Fix surface lighting gradient on widgets.
+
 ## 0.1.0
 
 - Add `SensorShadow`, `SensorShadowCard`, and accessible `SensorShadowButton`.
