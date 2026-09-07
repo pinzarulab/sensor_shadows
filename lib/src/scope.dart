@@ -50,9 +50,14 @@ class _SensorShadowScopeState extends State<SensorShadowScope> {
       (_owned ??= SensorShadowController(autoStart: false));
 
   void _sync() {
-    _enabled = widget.enabled &&
-        !(widget.respectReducedMotion &&
-            (MediaQuery.maybeOf(context)?.disableAnimations ?? false));
+    final hasMediaQuery =
+        context.getElementForInheritedWidgetOfExactType<MediaQuery>() != null;
+    final disableAnimations =
+        hasMediaQuery ? MediaQuery.disableAnimationsOf(context) : false;
+
+    _enabled =
+        widget.enabled && !(widget.respectReducedMotion && disableAnimations);
+
     if (widget.controller != null) {
       _owned?.dispose();
       _owned = null;

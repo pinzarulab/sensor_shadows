@@ -130,8 +130,17 @@ class SensorShadowController extends ValueNotifier<Offset>
         .sqrt(sample.x * sample.x + sample.y * sample.y + sample.z * sample.z);
     if (!magnitude.isFinite || magnitude < 0.001) return;
     var raw = Offset(-sample.x / magnitude, sample.y / magnitude);
-    for (var i = 0; i < quarterTurns % 4; i++) {
-      raw = Offset(-raw.dy, raw.dx);
+    final turns = quarterTurns % 4;
+    switch (turns) {
+      case 1:
+        raw = Offset(-raw.dy, raw.dx);
+        break;
+      case 2:
+        raw = Offset(-raw.dx, -raw.dy);
+        break;
+      case 3:
+        raw = Offset(raw.dy, -raw.dx);
+        break;
     }
     _lastRaw = raw;
     final target = _clamp((raw - _neutral) * sensitivity);

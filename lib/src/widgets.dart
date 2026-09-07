@@ -117,10 +117,14 @@ class SensorShadow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final source = controller ?? SensorShadowScope.maybeOf(context);
+    final hasMediaQuery =
+        context.getElementForInheritedWidgetOfExactType<MediaQuery>() != null;
+    final disableAnimations =
+        hasMediaQuery ? MediaQuery.disableAnimationsOf(context) : false;
+
     final active = enabled &&
         SensorShadowScope.motionEnabledOf(context) &&
-        !(respectReducedMotion &&
-            (MediaQuery.maybeOf(context)?.disableAnimations ?? false));
+        !(respectReducedMotion && disableAnimations);
     final content = Padding(padding: padding, child: child);
     Widget surface(Offset tilt, Widget? content) => DecoratedBox(
           decoration: style.decorationFor(tilt),
