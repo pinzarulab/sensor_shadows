@@ -1,7 +1,7 @@
 /// Accelerometer-driven shadows and lighting for Flutter surfaces.
 ///
-/// Wrap a widget tree in [SensorShadowScope], then use [SensorShadow],
-/// [SensorShadowCard], or [SensorShadowButton].
+/// Wrap an app in [SensorShadows], then use [SensorShadow], [SensorShadowCard],
+/// or [SensorShadowButton] anywhere below it.
 library;
 
 export 'src/controller.dart';

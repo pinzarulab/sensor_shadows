@@ -42,18 +42,79 @@ class SensorShadowScope extends StatefulWidget {
   State<SensorShadowScope> createState() => _SensorShadowScopeState();
 }
 
-class _SensorShadowScopeState extends State<SensorShadowScope> {
+/// App-level entry point for sensor-driven shadows.
+///
+/// Place this widget directly around a [WidgetsApp], `MaterialApp`, or
+/// `CupertinoApp`:
+///
+/// ```dart
+/// runApp(
+///   SensorShadows(
+///     child: MaterialApp(home: MyHomePage()),
+///   ),
+/// );
+/// ```
+///
+/// It owns one [SensorShadowController] and makes it available to every
+/// package surface in every route, dialog, and overlay. An external
+/// [controller] remains caller-owned.
+///
+/// Flutter does not expose a global hook for changing the geometry of shadows
+/// painted by arbitrary widgets. Consequently, this wrapper drives
+/// `SensorShadow`, `SensorShadowCard`, and `SensorShadowButton`; it cannot
+/// replace shadows painted internally by stock `Material` or `Card` widgets.
+class SensorShadows extends StatelessWidget {
+  /// Creates an app-level sensor shadow scope.
+  const SensorShadows({
+    super.key,
+    required this.child,
+    this.controller,
+    this.enabled = true,
+    this.respectReducedMotion = true,
+  });
+
+  /// App widget, normally a `MaterialApp` or `CupertinoApp`.
+  final Widget child;
+
+  /// Optional caller-owned controller shared by all package surfaces.
+  final SensorShadowController? controller;
+
+  /// Whether package surfaces respond to tilt.
+  final bool enabled;
+
+  /// Whether platform reduced-motion settings suppress tilt.
+  final bool respectReducedMotion;
+
+  @override
+  Widget build(BuildContext context) => SensorShadowScope(
+        controller: controller,
+        enabled: enabled,
+        respectReducedMotion: respectReducedMotion,
+        child: child,
+      );
+}
+
+class _SensorShadowScopeState extends State<SensorShadowScope>
+    with WidgetsBindingObserver {
   SensorShadowController? _owned;
   bool _enabled = true;
   SensorShadowController get _controller =>
       widget.controller ??
       (_owned ??= SensorShadowController(autoStart: false));
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
   void _sync() {
     final hasMediaQuery =
         context.getElementForInheritedWidgetOfExactType<MediaQuery>() != null;
-    final disableAnimations =
-        hasMediaQuery ? MediaQuery.disableAnimationsOf(context) : false;
+    final disableAnimations = hasMediaQuery
+        ? MediaQuery.disableAnimationsOf(context)
+        : WidgetsBinding.instance.platformDispatcher.accessibilityFeatures
+            .disableAnimations;
 
     _enabled =
         widget.enabled && !(widget.respectReducedMotion && disableAnimations);
@@ -81,7 +142,13 @@ class _SensorShadowScopeState extends State<SensorShadowScope> {
   }
 
   @override
+  void didChangeAccessibilityFeatures() {
+    if (mounted) setState(_sync);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _owned?.dispose();
     super.dispose();
   }

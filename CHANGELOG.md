@@ -1,3 +1,11 @@
+## 0.1.2
+
+- Add `SensorShadows`, an app-level wrapper for one shared controller across
+  every route, dialog, and overlay.
+- Respect platform reduced-motion settings when the scope sits above
+  `MaterialApp` and no `MediaQuery` exists yet.
+- Document Flutter's boundary for stock Material and arbitrary box shadows.
+
 ## 0.1.1
 
 - Fix surface lighting gradient on widgets.

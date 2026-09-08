@@ -4,12 +4,41 @@ import 'package:sensor_shadows/sensor_shadows.dart';
 void main() => runApp(const LightingStudio());
 
 /// Complete interactive demo of shared sensor lighting and manual tilt.
-class LightingStudio extends StatelessWidget {
+class LightingStudio extends StatefulWidget {
   /// Creates the example application.
   const LightingStudio({super.key});
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  State<LightingStudio> createState() => _LightingStudioState();
+}
+
+class _LightingStudioState extends State<LightingStudio> {
+  late final ValueNotifier<String?> _sensorError;
+  late final SensorShadowController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _sensorError = ValueNotifier(null);
+    _controller = SensorShadowController(
+      autoStart: false,
+      onError: (error, stack) {
+        _sensorError.value = 'Sensor unavailable. Try manual tilt below.';
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _sensorError.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SensorShadows(
+      controller: _controller,
+      child: MaterialApp(
         title: 'Sensor Shadows · Lighting Studio',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -18,37 +47,24 @@ class LightingStudio extends StatelessWidget {
           scaffoldBackgroundColor: const Color(0xFFE9E8E2),
           fontFamily: 'sans-serif',
         ),
-        home: const _Studio(),
-      );
+        home: _Studio(controller: _controller, sensorError: _sensorError),
+      ));
 }
 
 class _Studio extends StatefulWidget {
-  const _Studio();
+  const _Studio({required this.controller, required this.sensorError});
+
+  final SensorShadowController controller;
+  final ValueNotifier<String?> sensorError;
+
   @override
   State<_Studio> createState() => _StudioState();
 }
 
 class _StudioState extends State<_Studio> {
-  late final SensorShadowController _controller;
   bool _manual = false;
   bool _motion = true;
   double _depth = 22;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = SensorShadowController(
-        autoStart: false,
-        onError: (error, stack) {
-          if (mounted) {
-            setState(() {
-              _error = 'Sensor unavailable. Try manual tilt below.';
-              _manual = true;
-            });
-          }
-        });
-  }
 
   @override
   void didChangeDependencies() {
@@ -60,75 +76,62 @@ class _StudioState extends State<_Studio> {
     if (!_manual && _motion && !MediaQuery.of(context).disableAnimations) {
       _controller.start();
     } else {
-      _controller.stop();
+      _controller.stop(resetTilt: !_motion);
     }
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  SensorShadowController get _controller => widget.controller;
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     final style = SensorShadowStyle(maxOffset: _depth);
-    return SensorShadowScope(
-      controller: _controller,
-      enabled: _motion,
-      child: Scaffold(
-        body: SafeArea(
-            child: Center(
-                child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1040),
-          child: ListView(padding: const EdgeInsets.all(28), children: [
-            const Wrap(
-                spacing: 10,
-                runSpacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Icon(Icons.blur_on, size: 28),
-                  SizedBox(width: 10),
-                  Text('SENSOR SHADOWS',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700, letterSpacing: 2)),
-                  Text('EXAMPLE / 01'),
-                ]),
-            const SizedBox(height: 48),
-            Text('A little tilt.\nA whole new dimension.',
-                style: text.displaySmall?.copyWith(
-                    fontWeight: FontWeight.w600, letterSpacing: -1.5)),
-            const SizedBox(height: 16),
-            Text(
-                'Light that follows your hands. Tilt your phone to move the '
-                'shadows, or explore with the manual controls.',
-                style: text.bodyLarge),
-            const SizedBox(height: 32),
-            LayoutBuilder(builder: (context, constraints) {
-              final wide = constraints.maxWidth > 700;
-              final showcase = _showcase(style, text);
-              final controls = _controls(text);
-              return wide
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                          Expanded(flex: 3, child: showcase),
-                          const SizedBox(width: 32),
-                          Expanded(flex: 2, child: controls)
-                        ])
-                  : Column(children: [
-                      showcase,
-                      const SizedBox(height: 32),
-                      controls
-                    ]);
-            }),
-            const SizedBox(height: 40),
-            Text('ONE SENSOR STREAM · SHARED LIGHT · BUILT WITH FLUTTER',
-                style: text.labelSmall?.copyWith(letterSpacing: 1.3)),
-          ]),
-        ))),
-      ),
+    return Scaffold(
+      body: SafeArea(
+          child: Center(
+              child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1040),
+        child: ListView(padding: const EdgeInsets.all(28), children: [
+          const Wrap(
+              spacing: 10,
+              runSpacing: 12,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Icon(Icons.blur_on, size: 28),
+                SizedBox(width: 10),
+                Text('SENSOR SHADOWS',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700, letterSpacing: 2)),
+                Text('EXAMPLE / 01'),
+              ]),
+          const SizedBox(height: 48),
+          Text('A little tilt.\nA whole new dimension.',
+              style: text.displaySmall
+                  ?.copyWith(fontWeight: FontWeight.w600, letterSpacing: -1.5)),
+          const SizedBox(height: 16),
+          Text(
+              'Light that follows your hands. Tilt your phone to move the '
+              'shadows, or explore with the manual controls.',
+              style: text.bodyLarge),
+          const SizedBox(height: 32),
+          LayoutBuilder(builder: (context, constraints) {
+            final wide = constraints.maxWidth > 700;
+            final showcase = _showcase(style, text);
+            final controls = _controls(text);
+            return wide
+                ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(flex: 3, child: showcase),
+                    const SizedBox(width: 32),
+                    Expanded(flex: 2, child: controls)
+                  ])
+                : Column(
+                    children: [showcase, const SizedBox(height: 32), controls]);
+          }),
+          const SizedBox(height: 40),
+          Text('ONE SENSOR STREAM · SHARED LIGHT · BUILT WITH FLUTTER',
+              style: text.labelSmall?.copyWith(letterSpacing: 1.3)),
+        ]),
+      ))),
     );
   }
 
@@ -209,9 +212,15 @@ class _StudioState extends State<_Studio> {
           const SizedBox(height: 8),
           const Text('Portrait sensor axes. Calibrate while holding your phone '
               'in a comfortable position.'),
-          if (_error != null)
-            Padding(
-                padding: const EdgeInsets.only(top: 12), child: Text(_error!)),
+          ValueListenableBuilder<String?>(
+            valueListenable: widget.sensorError,
+            builder: (context, error, child) => error == null
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(error),
+                  ),
+          ),
           SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Motion enabled'),

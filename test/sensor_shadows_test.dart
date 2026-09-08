@@ -169,6 +169,47 @@ void main() {
         .equals(const Offset(0, 4));
   });
 
+  testWidgets('SensorShadows wraps MaterialApp and shares one controller',
+      (tester) async {
+    final controller = SensorShadowController(autoStart: false);
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(SensorShadows(
+      controller: controller,
+      child: const MaterialApp(
+        home: Scaffold(
+          body: SensorShadowCard(child: Text('App-wide surface')),
+        ),
+      ),
+    ));
+
+    controller.setTilt(const Offset(-1, 1));
+    await tester.pump();
+
+    expect(find.text('App-wide surface'), findsOneWidget);
+    check(decoration(tester).boxShadow!.single.offset)
+        .equals(const Offset(-18, 22));
+  });
+
+  testWidgets('root wrapper respects platform reduced motion', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    final controller = SensorShadowController(autoStart: false);
+    addTearDown(controller.dispose);
+    controller.setTilt(const Offset(1, 1));
+
+    await tester.pumpWidget(SensorShadows(
+      controller: controller,
+      child: const MaterialApp(
+        home: SensorShadow(child: Text('Still app')),
+      ),
+    ));
+
+    check(decoration(tester).boxShadow!.single.offset)
+        .equals(const Offset(0, 4));
+  });
+
   testWidgets('button supports keyboard, taps, and disabled semantics',
       (tester) async {
     var presses = 0;

@@ -11,7 +11,7 @@ Reduced-motion preferences are respected by default.
 
 ```yaml
 dependencies:
-  sensor_shadows: ^0.1.0
+  sensor_shadows: ^0.1.2
 ```
 
 Requires Dart 3.5+ and Flutter 3.24+. Native builds also need the toolchain
@@ -40,11 +40,11 @@ import 'package:flutter/material.dart';
 import 'package:sensor_shadows/sensor_shadows.dart';
 
 void main() {
-  runApp(MaterialApp(
-    home: Scaffold(
-      backgroundColor: const Color(0xFFE9E8E2),
-      body: SensorShadowScope(
-        child: Center(
+  runApp(SensorShadows(
+    child: MaterialApp(
+      home: Scaffold(
+        backgroundColor: const Color(0xFFE9E8E2),
+        body: Center(
           child: SensorShadowCard(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -65,9 +65,17 @@ void main() {
 }
 ```
 
-Place the scope beneath `MaterialApp` or another `MediaQuery`. It owns its
-controller, subscribes once for all descendant surfaces, and disposes it when
-removed. A surface without a scope or explicit controller renders static lighting.
+`SensorShadows` sits once around `MaterialApp`. It owns one controller,
+subscribes once, and reaches package surfaces in every route, dialog, and overlay.
+Use `SensorShadowScope` inside part of an app only when you need a separate light
+source or controller. A surface without either wrapper renders static lighting.
+
+Flutter does not provide a global hook that can change shadow offsets painted by
+arbitrary descendants. The app wrapper therefore powers every package-aware
+`SensorShadow`, `SensorShadowCard`, and `SensorShadowButton`, but it cannot alter
+shadows internal to stock `Card`, `Material`, or an unrelated `Container`. Replace
+only widgets whose shadows should move with the matching package component; no
+per-widget controller or scope is needed.
 
 ## Customize a surface
 
@@ -203,6 +211,7 @@ simulators may produce no readings.
 
 | Type | Purpose |
 | --- | --- |
+| `SensorShadows` | Wrap `MaterialApp` once and share tilt across the whole app. |
 | `SensorShadowScope` | Share a sensor controller across descendants. |
 | `SensorShadowController` | Sampling, lifecycle, smoothing, calibration, and manual input. |
 | `TiltSample` | Injectable gravity-inclusive acceleration reading. |
